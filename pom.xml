@@ -70,7 +70,8 @@
 		<url>https://github.com/fmi-basel/faim-ij2-visiview-processing/issues</url>
 	</issueManagement>
 	<ciManagement>
-		<system>N/A</system>
+		<system>Travis CI</system>
+		<url>https://travis-ci.com/fmi-basel/faim-ij2-visiview-processing</url>
 	</ciManagement>
 
 	<properties>
