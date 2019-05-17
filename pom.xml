@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.scijava</groupId>
+		<artifactId>pom-scijava</artifactId>
+		<version>26.0.0</version>
+		<relativePath />
+	</parent>
+
+	<groupId>ch.fmi</groupId>
+	<artifactId>faim-ij2-visiview-processing</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+
+	<name>Processing VisiView datasets</name>
+	<description>ImageJ plugins for processing VisiView datasets</description>
+	<url>https://github.com/fmi-basel/faim-ij2-visiview-processing</url>
+	<inceptionYear>2019</inceptionYear>
+	<organization>
+		<name>Friedrich Miescher Institute for Biomedical Research (FMI), Basel</name>
+		<url>http://www.fmi.ch/</url>
+	</organization>
+	<licenses>
+		<license>
+			<name>BSD 2-Clause License</name>
+			<url>https://opensource.org/licenses/BSD-2-Clause</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<id>imagejan</id>
+			<name>Jan Eglinger</name>
+			<url>https://imagej.net/User:Eglinger</url>
+			<roles>
+				<!-- See https://imagej.net/Team -->
+				<role>founder</role>
+				<role>lead</role>
+				<role>developer</role>
+				<role>debugger</role>
+				<role>reviewer</role>
+				<role>support</role>
+				<role>maintainer</role>
+			</roles>
+		</developer>
+	</developers>
+	<contributors>
+		<contributor>
+			<name>None</name>
+		</contributor>
+	</contributors>
+
+	<mailingLists>
+		<mailingList>
+			<name>ImageJ Forum</name>
+			<archive>https://forum.image.sc/</archive>
+		</mailingList>
+	</mailingLists>
+
+	<scm>
+		<connection>scm:git:git://github.com/fmi-basel/faim-ij2-visiview-processing</connection>
+		<developerConnection>scm:git:git@github.com:fmi-basel/faim-ij2-visiview-processing</developerConnection>
+		<tag>HEAD</tag>
+		<url>https://github.com/fmi-basel/faim-ij2-visiview-processing</url>
+	</scm>
+	<issueManagement>
+		<system>GitHub Issues</system>
+		<url>https://github.com/fmi-basel/faim-ij2-visiview-processing/issues</url>
+	</issueManagement>
+	<ciManagement>
+		<system>N/A</system>
+	</ciManagement>
+
+	<properties>
+		<package-name>ch.fmi</package-name>
+		<license.licenseName>bsd_2</license.licenseName>
+		<license.copyrightOwners>Friedrich Miescher Institute for Biomedical
+			Research, Basel</license.copyrightOwners>
+
+		<!-- NB: Deploy releases to the SciJava Maven repository. -->
+		<releaseProfiles>deploy-to-scijava</releaseProfiles>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.scijava</groupId>
+			<artifactId>scijava-common</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>io.scif</groupId>
+			<artifactId>scifio</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>io.scif</groupId>
+			<artifactId>scifio-ome-xml</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.scijava</groupId>
+			<artifactId>scijava-ui-swing</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>sc.fiji</groupId>
+			<artifactId>Stitching_</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>ome</groupId>
+			<artifactId>bio-formats_plugins</artifactId>
+			<scope>runtime</scope>
+			<exclusions>
+				<exclusion><!-- NB: Exclude problematic uber-JAR that bundles commons-io. -->
+					<groupId>ch.systems.cisd</groupId>
+					<artifactId>jhdf5</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>io.scif</groupId>
+			<artifactId>scifio-bf-compat</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>net.imagej</groupId>
+			<artifactId>imagej-legacy</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- for running the main method -->
+		<dependency>
+			<groupId>net.imagej</groupId>
+			<artifactId>imagej</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<repositories>
+		<repository>
+			<id>scijava.public</id>
+			<url>https://maven.scijava.org/content/groups/public</url>
+		</repository>
+	</repositories>
+</project>
