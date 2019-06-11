@@ -11,7 +11,7 @@
 
 	<groupId>ch.fmi</groupId>
 	<artifactId>faim-ij2-visiview-processing</artifactId>
-	<version>0.0.2-SNAPSHOT</version>
+	<version>0.0.2</version>
 
 	<name>Processing VisiView datasets</name>
 	<description>ImageJ plugins for processing VisiView datasets</description>
@@ -62,7 +62,7 @@
 	<scm>
 		<connection>scm:git:git://github.com/fmi-basel/faim-ij2-visiview-processing</connection>
 		<developerConnection>scm:git:git@github.com:fmi-basel/faim-ij2-visiview-processing</developerConnection>
-		<tag>HEAD</tag>
+		<tag>faim-ij2-visiview-processing-0.0.2</tag>
 		<url>https://github.com/fmi-basel/faim-ij2-visiview-processing</url>
 	</scm>
 	<issueManagement>
