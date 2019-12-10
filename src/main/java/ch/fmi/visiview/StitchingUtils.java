@@ -75,8 +75,10 @@ public class StitchingUtils {
 	 * @return List of transformation models
 	 */
 	public static ArrayList<InvertibleBoundable> computeStitching(ArrayList<ImagePlus> images, ArrayList<float[]> positions, int dimensionality, boolean computeOverlap) {
+		// TODO consider changing signature to List instead of ArrayList
+		// (although Fusion.fuse requires ArrayList anyways...)
 		if (images.size() != positions.size()) {
-			throw new RuntimeException("number of images != number of positions");
+			throw new RuntimeException("number of images (" + images.size() + ") != number of positions (" + positions.size() + ")");
 		}
 
 		// Create tile list

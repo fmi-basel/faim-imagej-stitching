@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import loci.formats.FormatException;
@@ -243,13 +244,33 @@ public class VisiViewStitching extends DynamicCommand {
 				// case: MIP output: fuse
 
 				fused = StitchingUtils.fuseTiles(images, models, 2);
+
+				// TODO set title and calibration
+
 			} else { // stitch with TileConfiguration.txt file
-				String tileConfigPath = writeTileConfiguration(ndFile, pixelPositions, is2D);
+				//String tileConfigPath = writeTileConfiguration(ndFile, pixelPositions, is2D);
 
 				// stitchClassical(tileConfigPath);
-				// load all series into imps[]
-				// computeStitching
-				// fuseTiles
+				try {
+					// load all series into imps[]
+					ImporterOptions options = new ImporterOptions();
+					options.setOpenAllSeries(true);
+					options.setId(ndFile.getAbsolutePath());
+					ImagePlus[] imps = BF.openImagePlus(options);
+
+					images = new ArrayList<>();
+					images.addAll(Arrays.asList(imps));
+					// computeStitching
+					models = StitchingUtils.computeStitching(images, pixelPositions, is2D ? 2 : 3, stitchingMode.equals(QUICK) ? false : true);
+					// fuseTiles
+					fused = StitchingUtils.fuseTiles(images, models, is2D ? 2 : 3);
+				} catch (FormatException exc) {
+					logService.error("Error performing a file format operation", exc);
+					return;
+				} catch (IOException exc) {
+					logService.error("Error reading file", exc);
+					return;
+				}
 			}
 		} else {
 			logService.error("Initial tile positions cannot be determined.");
@@ -406,7 +427,7 @@ public class VisiViewStitching extends DynamicCommand {
 		positionNames = new ArrayList<>();
 		for (int i = 0; i < nSeries; i++) {
 			positionNames.add(omeMeta.getImageName(i));
-			logService.error("Position " + i + ": " + omeMeta.getImageName(i));
+			logService.debug("Position " + i + ": " + omeMeta.getImageName(i));
 		}
 
 		gridPositions = new ArrayList<>();
@@ -414,7 +435,7 @@ public class VisiViewStitching extends DynamicCommand {
 
 		if (p.matcher(positionNames.get(0)).matches()) {
 			stgRequired = false;
-			logService.error("Position names match Row#_Col# pattern");
+			logService.debug("Position names match Row#_Col# pattern");
 
 			for (int i = 0; i < nSeries; i++) {
 				Matcher m = p.matcher(positionNames.get(i));
@@ -427,10 +448,10 @@ public class VisiViewStitching extends DynamicCommand {
 			pixelPositions = new ArrayList<>();
 			for (int[] pos : gridPositions) {
 				pixelPositions.add(new float[] { //
-					-pos[1] * xSize * (1 - VISIVIEW_OVERLAP_FACTOR), //
+					pos[1] * xSize * (1 - VISIVIEW_OVERLAP_FACTOR), //
 					pos[0] * ySize * (1 - VISIVIEW_OVERLAP_FACTOR) //
 				});
-				// TODO check positions in different cases!
+				// TODO check positions in different cases! (inverted x for some microscopes?)
 			}
 
 			StitchingUtils.drawPositions(layout, pixelPositions, xSize, ySize);
