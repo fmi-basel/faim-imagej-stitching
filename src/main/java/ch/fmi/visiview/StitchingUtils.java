@@ -2,7 +2,7 @@
  * #%L
  * ImageJ plugins for processing VisiView datasets
  * %%
- * Copyright (C) 2019 Friedrich Miescher Institute for Biomedical
+ * Copyright (C) 2019 - 2020 Friedrich Miescher Institute for Biomedical
  * 			Research, Basel
  * %%
  * Redistribution and use in source and binary forms, with or without
