@@ -61,8 +61,10 @@ import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
+import ch.fmi.stitching.StitchingUtils;
+
 @Plugin(type = Command.class, headless = true,
-	menuPath = "FMI>VisiView Data>Stitch Dataset (beta)",
+	menuPath = "FMI>VisiView Data>Stitch Dataset (default)",
 	initializer = "initializeDialog")
 public class VisiViewStitching extends DynamicCommand {
 

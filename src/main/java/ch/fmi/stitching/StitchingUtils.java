@@ -28,13 +28,15 @@
  * #L%
  */
 
-package ch.fmi.visiview;
+package ch.fmi.stitching;
 
 import ij.ImagePlus;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.List;
+
 import mpicbg.models.InvertibleBoundable;
 import mpicbg.models.TranslationModel2D;
 import mpicbg.models.TranslationModel3D;
@@ -66,15 +68,63 @@ public class StitchingUtils {
 	}
 
 	/**
+	 * Create {@link StitchingParameters} with sensible defaults.
+	 * 
+	 * The {@code cpMemChoice}, {@code dimensionality} and {@code computeOverlap} fields
+	 * of the returned object still need to be set by the consumer.
+	 * 
+ 	 * @return Default {@link StitchingParameters} to be used for stitching
+	 */
+	public static StitchingParameters defaultParameters() {
+		StitchingParameters params = new StitchingParameters();
+		params.checkPeaks = 5;
+		params.subpixelAccuracy = true;
+		params.regThreshold = 0.7;
+		return params;
+	}
+
+	/**
 	 * Compute optimal tile positions from a list of known initial positions
 	 * 
 	 * @param images List of tiles
 	 * @param positions List of known positions
 	 * @param dimensionality 2 or 3
-	 * @param computeOverlap whether to compute the exact tile overlap, or to trust the known coordinates
+	 * @param computeOverlap if true, compute the exact tile overlap; if false, trust the known coordinates
 	 * @return List of transformation models
 	 */
-	public static ArrayList<InvertibleBoundable> computeStitching(ArrayList<ImagePlus> images, ArrayList<float[]> positions, int dimensionality, boolean computeOverlap) {
+	public static ArrayList<InvertibleBoundable> computeStitching(ArrayList<ImagePlus> images, List<float[]> positions, int dimensionality, boolean computeOverlap) {
+		return computeStitching(images, positions, dimensionality, computeOverlap, false);
+	}
+
+	/**
+	 * Compute optimal tile positions from a list of known initial positions
+	 * 
+	 * @param images List of tiles
+	 * @param positions List of known positions
+	 * @param dimensionality 2 or 3
+	 * @param computeOverlap If true, compute the exact tile overlap; if false, trust the known coordinates
+	 * @param saveMemory If true, save memory at the cost of computation time; if false, use more RAM 
+	 * @return List of transformation models
+	 */
+	public static ArrayList<InvertibleBoundable> computeStitching(ArrayList<ImagePlus> images, List<float[]> positions, int dimensionality, boolean computeOverlap, boolean saveMemory) {
+		// Create parameters
+		StitchingParameters params = defaultParameters();
+		params.cpuMemChoice = saveMemory ? 0 : 1; // 1 = faster, use more RAM
+		params.dimensionality = dimensionality;
+		params.computeOverlap = computeOverlap;
+
+		return computeStitching(images, positions, params);
+	}
+
+	/**
+	 * Compute optimal tile positions from a list of known initial positions
+	 * 
+	 * @param images List of tiles
+	 * @param positions List of known positions
+	 * @param params {@link StitchingParameters} defining the options for stitching
+	 * @return List of transformation models
+	 */
+	public static ArrayList<InvertibleBoundable> computeStitching(ArrayList<ImagePlus> images, List<float[]> positions, StitchingParameters params) {
 		// TODO consider changing signature to List instead of ArrayList
 		// (although Fusion.fuse requires ArrayList anyways...)
 		if (images.size() != positions.size()) {
@@ -86,10 +136,10 @@ public class StitchingUtils {
 		float[] pos;
 		for (int i = 0; i < images.size(); i++) {
 			ImageCollectionElement element = new ImageCollectionElement(null, i);
-			element.setDimensionality( dimensionality );
-			element.setModel(dimensionality == 2 ? new TranslationModel2D() : new TranslationModel3D());
+			element.setDimensionality( params.dimensionality );
+			element.setModel(params.dimensionality == 2 ? new TranslationModel2D() : new TranslationModel3D());
 			element.setImagePlus(images.get(i));
-			if (dimensionality == 2) {
+			if (params.dimensionality == 2) {
 				element.setOffset(positions.get(i));
 			} else {
 				pos = positions.get(i);
@@ -97,14 +147,6 @@ public class StitchingUtils {
 			}
 			elements.add(element);
 		}
-		
-		// Create parameters
-		StitchingParameters params = new StitchingParameters();
-		params.cpuMemChoice = 1; // faster, use more RAM
-		params.dimensionality = dimensionality;
-		params.computeOverlap = computeOverlap;
-		params.checkPeaks = 5;
-		params.subpixelAccuracy = true;
 
 		// Compute stitching
 		ArrayList<ImagePlusTimePoint> tiles = CollectionStitchingImgLib.stitchCollection(elements, params);
