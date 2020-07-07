@@ -65,7 +65,7 @@ import ch.fmi.stitching.StitchingUtils;
 @Plugin(type = Command.class, headless = true,
 	menuPath = "FMI>VisiView Data>Stitch Dataset (default)",
 	initializer = "initializeDialog")
-public class VisiViewStitching extends DynamicCommand {
+public class StitchVisiviewDatasetCommand extends DynamicCommand {
 
 	private static final String QUICK = "Quick (do not compute overlap)";
 	private static final String VIA_MIP = "Compute overlap on maximum projection";
