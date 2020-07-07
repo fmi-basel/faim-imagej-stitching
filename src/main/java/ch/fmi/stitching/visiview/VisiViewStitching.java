@@ -28,7 +28,7 @@
  * #L%
  */
 
-package ch.fmi.visiview;
+package ch.fmi.stitching.visiview;
 
 import ij.ImagePlus;
 import ij.measure.Calibration;
@@ -52,7 +52,6 @@ import loci.formats.meta.IMetadata;
 import loci.plugins.BF;
 import loci.plugins.in.ImporterOptions;
 import mpicbg.models.InvertibleBoundable;
-import net.imagej.ImageJ;
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
@@ -595,11 +594,4 @@ public class VisiViewStitching extends DynamicCommand {
 		return tileConfigFile.getAbsolutePath();
 	}
 
-	public static void main(final String... args) {
-		// create the ImageJ application context with all available services
-		final ImageJ ij = new ImageJ();
-		ij.ui().showUI();
-
-		ij.command().run(VisiViewStitching.class, true);
-	}
 }
