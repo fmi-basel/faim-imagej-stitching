@@ -5,17 +5,17 @@
 	<parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
-		<version>29.0.0-beta-2</version>
+		<version>29.0.0-beta-3</version>
 		<relativePath />
 	</parent>
 
 	<groupId>ch.fmi</groupId>
-	<artifactId>faim-ij2-visiview-processing</artifactId>
+	<artifactId>faim-imagej-stitching</artifactId>
 	<version>0.0.4-SNAPSHOT</version>
 
-	<name>Processing VisiView datasets</name>
-	<description>ImageJ plugins for processing VisiView datasets</description>
-	<url>https://github.com/fmi-basel/faim-ij2-visiview-processing</url>
+	<name>Stitching Utilities</name>
+	<description>ImageJ utilities and commands for stitching various datasets</description>
+	<url>https://github.com/fmi-basel/faim-imagej-stitching</url>
 	<inceptionYear>2019</inceptionYear>
 	<organization>
 		<name>Friedrich Miescher Institute for Biomedical Research (FMI), Basel</name>
@@ -60,18 +60,18 @@
 	</mailingLists>
 
 	<scm>
-		<connection>scm:git:git://github.com/fmi-basel/faim-ij2-visiview-processing</connection>
-		<developerConnection>scm:git:git@github.com:fmi-basel/faim-ij2-visiview-processing</developerConnection>
+		<connection>scm:git:git://github.com/fmi-basel/faim-imagej-stitching</connection>
+		<developerConnection>scm:git:git@github.com:fmi-basel/faim-imagej-stitching</developerConnection>
 		<tag>HEAD</tag>
-		<url>https://github.com/fmi-basel/faim-ij2-visiview-processing</url>
+		<url>https://github.com/fmi-basel/faim-imagej-stitching</url>
 	</scm>
 	<issueManagement>
 		<system>GitHub Issues</system>
-		<url>https://github.com/fmi-basel/faim-ij2-visiview-processing/issues</url>
+		<url>https://github.com/fmi-basel/faim-imagej-stitching/issues</url>
 	</issueManagement>
 	<ciManagement>
 		<system>Travis CI</system>
-		<url>https://travis-ci.com/fmi-basel/faim-ij2-visiview-processing</url>
+		<url>https://travis-ci.com/fmi-basel/faim-imagej-stitching</url>
 	</ciManagement>
 
 	<properties>
@@ -137,6 +137,7 @@
 		<dependency>
 			<groupId>net.imagej</groupId>
 			<artifactId>imagej</artifactId>
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>
