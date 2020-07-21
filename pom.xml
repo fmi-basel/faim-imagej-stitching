@@ -11,7 +11,7 @@
 
 	<groupId>ch.fmi</groupId>
 	<artifactId>faim-imagej-stitching</artifactId>
-	<version>0.0.4-SNAPSHOT</version>
+	<version>0.1.1-SNAPSHOT</version>
 
 	<name>Stitching Utilities</name>
 	<description>ImageJ utilities and commands for stitching various datasets</description>
