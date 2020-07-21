@@ -82,6 +82,8 @@
 
 		<!-- NB: Deploy releases to the SciJava Maven repository. -->
 		<releaseProfiles>deploy-to-scijava</releaseProfiles>
+
+		<scifio.version>0.37.3</scifio.version>
 	</properties>
 
 	<dependencies>
@@ -108,6 +110,11 @@
 		<dependency>
 			<groupId>sc.fiji</groupId>
 			<artifactId>Stitching_</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.opencsv</groupId>
+			<artifactId>opencsv</artifactId>
 		</dependency>
 
 		<dependency>

@@ -30,12 +30,18 @@
 
 package ch.fmi.stitching.visiview;
 
-import ij.ImagePlus;
-import ij.measure.Calibration;
-import ij.plugin.Duplicator;
-import ij.plugin.ZProjector;
+import static ch.fmi.stitching.visiview.UIConstants.COMPUTE_FULL;
+import static ch.fmi.stitching.visiview.UIConstants.COMPUTE_NONE;
+import static ch.fmi.stitching.visiview.UIConstants.COMPUTE_VIA_MIP;
+import static ch.fmi.stitching.visiview.UIConstants.LAYOUT_HEIGHT;
+import static ch.fmi.stitching.visiview.UIConstants.LAYOUT_WIDTH;
+import static ch.fmi.stitching.visiview.UIConstants.OUTPUT_FULL;
+import static ch.fmi.stitching.visiview.UIConstants.OUTPUT_MIP;
+import static ch.fmi.stitching.visiview.UIConstants.OUTPUT_TXT;
+
 import io.scif.SCIFIO;
 import io.scif.services.FormatService;
+
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -43,15 +49,8 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import loci.formats.FormatException;
-import loci.formats.ImageReader;
-import loci.formats.MetadataTools;
-import loci.formats.meta.IMetadata;
-import loci.plugins.BF;
-import loci.plugins.in.ImporterOptions;
-import mpicbg.models.InvertibleBoundable;
+import java.util.List;
+
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
@@ -61,27 +60,22 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import ch.fmi.stitching.StitchingUtils;
+import ij.ImagePlus;
+import ij.measure.Calibration;
+import ij.plugin.Duplicator;
+import ij.plugin.ZProjector;
+import loci.formats.FormatException;
+import loci.formats.ImageReader;
+import loci.formats.MetadataTools;
+import loci.formats.meta.IMetadata;
+import loci.plugins.BF;
+import loci.plugins.in.ImporterOptions;
+import mpicbg.models.InvertibleBoundable;
 
 @Plugin(type = Command.class, headless = true,
 	menuPath = "FMI>VisiView Data>Stitch Dataset (default)",
 	initializer = "initializeDialog")
 public class StitchVisiviewDatasetCommand extends DynamicCommand {
-
-	private static final String QUICK = "Quick (do not compute overlap)";
-	private static final String VIA_MIP = "Compute overlap on maximum projection";
-	private static final String FULL = "Compute overlap on full volume";
-
-	private static final String TXT_ONLY = "Coordinates text file only";
-	private static final String MIP_ONLY = "Maximum projection only";
-	private static final String FULL_OUTPUT = "Full volume output";
-
-	private static final Pattern ndFilePattern = Pattern.compile("(.*_)\\d\\.nd");
-	private static final Pattern stgFilePattern = Pattern.compile("(.*_)\\.stg");
-
-	private static final int LAYOUT_WIDTH = 256;
-	private static final int LAYOUT_HEIGHT = 256;
-
-	private static final float VISIVIEW_OVERLAP_FACTOR = 0.1f;
 
 	@Parameter(label = "Input dataset file (nd)", style = "extensions:nd",
 		callback = "ndFileChanged", persist = false)
@@ -100,12 +94,15 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 	private String stgMessage = " ";
 
 	@Parameter(label = "Overlap computation mode", style = "radioButtonVertical", //
-		choices = { QUICK, VIA_MIP, FULL }, required = false)
-	private String stitchingMode = QUICK;
+		choices = { COMPUTE_NONE, COMPUTE_VIA_MIP, COMPUTE_FULL }, required = false)
+	private String stitchingMode = COMPUTE_NONE;
 
 	@Parameter(label = "Output", style = "radioButtonVertical", //
-		choices = { TXT_ONLY, MIP_ONLY, FULL_OUTPUT }, required = false)
-	private String outputMode = FULL_OUTPUT;
+		choices = { OUTPUT_TXT, OUTPUT_MIP, OUTPUT_FULL }, required = false)
+	private String outputMode = OUTPUT_FULL;
+
+	@Parameter(label = "Save RAM at the cost of speed", required = false)
+	private boolean saveRAM = false;
 
 	@Parameter(label = "Override calibration metadata with provided values",
 		required = false)
@@ -143,10 +140,9 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 	private long nTimepoints;
 	private int nSeries;
 
-	private ArrayList<float[]> pixelPositions;  // holds the pixel-based positions
-	private ArrayList<String> positionNames;
-	private ArrayList<int[]> gridPositions; // holds row and column positions (if applicable)
-	private ArrayList<ImagePlus> images;
+	private List<float[]> pixelPositions;  // holds the pixel-based positions
+	private List<String> positionNames;
+	private ArrayList<ImagePlus> images; // ArrayList required by stitching API
 	private ArrayList<InvertibleBoundable> models;
 
 	private boolean stgRequired;
@@ -197,7 +193,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 					return;
 				}
 
-				models = StitchingUtils.computeStitching(images, pixelPositions, 2, stitchingMode.equals(QUICK) ? false : true);
+				models = StitchingUtils.computeStitching(images, pixelPositions, 2, !stitchingMode.equals(COMPUTE_NONE), saveRAM);
 
 				fused = StitchingUtils.fuseTiles(images, models, 2);
 
@@ -210,7 +206,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 				fused.setCalibration(cal);
 				
 				// TODO close all images?
-			} else if (stitchingMode.equals(VIA_MIP) || outputMode.equals(MIP_ONLY)) {
+			} else if (stitchingMode.equals(COMPUTE_VIA_MIP) || outputMode.equals(OUTPUT_MIP)) {
 				// create MIPs for all series, stitch online
 				// parameters imp[], positions
 				logService.error("Stitching MIPs");
@@ -238,7 +234,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 					return;
 				}
 
-				models = StitchingUtils.computeStitching(images, pixelPositions, 2, stitchingMode.equals(QUICK) ? false : true);
+				models = StitchingUtils.computeStitching(images, pixelPositions, 2, stitchingMode.equals(COMPUTE_NONE) ? false : true, saveRAM);
 
 				// case: via MIP: go on with full dataset
 				// load all full series into imps[]
@@ -262,7 +258,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 					images = new ArrayList<>();
 					images.addAll(Arrays.asList(imps));
 					// computeStitching
-					models = StitchingUtils.computeStitching(images, pixelPositions, is2D ? 2 : 3, stitchingMode.equals(QUICK) ? false : true);
+					models = StitchingUtils.computeStitching(images, pixelPositions, is2D ? 2 : 3, stitchingMode.equals(COMPUTE_NONE) ? false : true, saveRAM);
 					// fuseTiles
 					fused = StitchingUtils.fuseTiles(images, models, is2D ? 2 : 3);
 				} catch (FormatException exc) {
@@ -273,6 +269,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 					return;
 				}
 			}
+			// TODO consolidate StitchingUtils calls to here (using is2D)
 		} else {
 			logService.error("Initial tile positions cannot be determined.");
 			// TODO offer possibility of stitching unknown positions ?
@@ -351,48 +348,33 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 
 	private void autoupdateStgFileParameter() {
 		if (ndFile == null || !ndFile.exists()) {
-			ndMessage = "Not a valid nd file.";
+			ndMessage = "<html><p style=\"color:red\">Not a valid nd file.</p></html>";
 			return;
 		}
-		Matcher m = ndFilePattern.matcher(ndFile.getName());
-		if (m.matches()) {
-			File stgFileCandidate = new File(ndFile.getParent(), m.group(1) + ".stg");
-			if (!stgFileCandidate.exists()) {
-				stgMessage =
-					"<html><p style=\"color:red\">No matching stg file found.</p></html>";
-				return;
-			}
-			stgFile = stgFileCandidate;
+		stgFile = VisiviewUtils.getMatchingStgForNd(ndFile);
+		if (stgFile == null) {
 			stgMessage =
-				"<html><p style=\"color:green\">The stg file path was updated automatically.</p></html>";
-			updateStgFileInfo();
+				"<html><p style=\"color:red\">No matching stg file found.</p></html>";
+			return;
 		}
-		else {
-			stgMessage = "No matching stg file found.";
-		}
+		stgMessage =
+			"<html><p style=\"color:green\">The stg file path was updated automatically.</p></html>";
+		updateStgFileInfo();
 	}
 
 	private void autoupdateNdFileParameter() {
 		if (stgFile == null || !stgFile.exists()) {
-			stgMessage = "Not a valid stg file.";
+			stgMessage = "<html><p style=\"color:red\">Not a valid stg file.</p></html>";
 			return;
 		}
-		Matcher m = stgFilePattern.matcher(stgFile.getName());
-		if (m.matches()) {
-			File ndFileCandidate = new File(stgFile.getParent(), m.group(1) + "1.nd");
-			// TODO test more numbers, i.e. 2.nd, 3.nd, 4.nd, ...
-			if (!ndFileCandidate.exists()) {
-				stgMessage = "No matching nd file found.";
-				return;
-			}
-			ndFile = ndFileCandidate;
-			stgMessage =
-				"<html><p style=\"color:green\">The nd file path was updated automatically.</p></html>";
-			updateNdFileInfo();
+		ndFile = VisiviewUtils.getMatchingNdForStg(stgFile);
+		if (ndFile == null) {
+			ndMessage = "<html><p style=\"color:red\">No matching nd file found.</p></html>";
+			return;
 		}
-		else {
-			stgMessage = "No matching nd file found.";
-		}
+		ndMessage =
+			"<html><p style=\"color:green\">The nd file path was updated automatically.</p></html>";
+		updateNdFileInfo();
 	}
 
 	private void updateNdFileInfo() {
@@ -427,40 +409,20 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 
 		positionNames = new ArrayList<>();
 		for (int i = 0; i < nSeries; i++) {
-			positionNames.add(omeMeta.getImageName(i));
-			logService.debug("Position " + i + ": " + omeMeta.getImageName(i));
+			String currentPositionName = omeMeta.getImageName(i);
+			positionNames.add(currentPositionName);
+			logService.debug("Position " + i + ": " + currentPositionName);
 		}
 
-		gridPositions = new ArrayList<>();
-		Pattern p = Pattern.compile("Stage\\d+ \"Row(\\d+)_Col(\\d+)\"");
+		stgRequired = !VisiviewUtils.positionsMatchGridPattern(positionNames);
 
-		if (p.matcher(positionNames.get(0)).matches()) {
-			stgRequired = false;
+		if (!stgRequired) {
 			logService.debug("Position names match Row#_Col# pattern");
-
-			for (int i = 0; i < nSeries; i++) {
-				Matcher m = p.matcher(positionNames.get(i));
-				gridPositions.add(m.matches() ? new int[] { //
-					Integer.parseInt(m.group(1)), //
-					Integer.parseInt(m.group(2)) //
-				} : null);
-			}
-
-			pixelPositions = new ArrayList<>();
-			for (int[] pos : gridPositions) {
-				pixelPositions.add(new float[] { //
-					pos[1] * xSize * (1 - VISIVIEW_OVERLAP_FACTOR), //
-					pos[0] * ySize * (1 - VISIVIEW_OVERLAP_FACTOR) //
-				});
-				// TODO check positions in different cases! (inverted x for some microscopes?)
-			}
+			pixelPositions = VisiviewUtils.positionsFromNames(positionNames, xSize, ySize);
 
 			StitchingUtils.drawPositions(layout, pixelPositions, xSize, ySize);
-
 			stgMessage =
 				"<html><font style=\"color:green\">No stage position file required.</font></html>";
-		} else {
-			stgRequired = true;
 		}
 
 		ndMessage = "<html>This dataset contains <font style=\"color:green\">" +
@@ -550,24 +512,14 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 	}
 
 	private void updateStgFileInfo() {
-		pixelPositions = new ArrayList<>();
 		try {
-			Files.lines(stgFile.toPath()).skip(4).forEachOrdered(line -> pixelPositions
-				.add(positionFromLine(line, xCal, yCal)));
+			pixelPositions = VisiviewUtils.positionsFromStgFile(stgFile, xCal, yCal);
 			StitchingUtils.drawPositions(layout, pixelPositions, xSize, ySize);
 		}
 		catch (IOException exc) {
 			stgMessage = "Error parsing stg file";
 			logService.debug("Error parsing stg file", exc);
 		}
-	}
-
-	private float[] positionFromLine(String line, Double xCalibration,
-		Double yCalibration)
-	{
-		String[] tokens = line.split(",");
-		return new float[] { (float) (Float.parseFloat(tokens[1]) / xCalibration), (float) (Float
-			.parseFloat(tokens[2]) / yCalibration) };
 	}
 
 	private String writeTileConfiguration(File file,
