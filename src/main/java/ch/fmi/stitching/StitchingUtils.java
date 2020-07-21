@@ -209,7 +209,7 @@ public class StitchingUtils {
 	 * @param xSize Width of a single tile
 	 * @param ySize Height of a single tile
 	 */
-	public static void drawPositions(BufferedImage image, ArrayList<float[]> pixelPositions, long xSize, long ySize)
+	public static void drawPositions(BufferedImage image, List<float[]> pixelPositions, long xSize, long ySize)
 	{
 		Float xMin = Float.POSITIVE_INFINITY;
 		Float yMin = Float.POSITIVE_INFINITY;
