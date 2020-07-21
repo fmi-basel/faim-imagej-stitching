@@ -44,6 +44,8 @@ import java.util.stream.Collectors;
 
 import ij.IJ;
 import ij.ImagePlus;
+import ij.io.FileInfo;
+import ij.io.TiffDecoder;
 import ij.plugin.Concatenator;
 import ij.plugin.HyperStackConverter;
 
@@ -140,6 +142,14 @@ public class VisiviewUtils {
 		}
 		// TODO respect WaveInFileName? (for multi-channel only; this is true for all datasets known at FMI)
 		return stkList;
+	}
+
+	public static int[] getTiffDimensions(File file) throws IOException {
+		FileInfo[] info = new TiffDecoder(file.getParent(), file.getName()).getTiffInfo();
+		int[] dims = new int[2];
+		dims[0] = info[0].width;
+		dims[1] = info[0].height;
+		return dims;
 	}
 
 	public static ImagePlus loadPositionStack(List<File> fileList, int nChannels, int nTimepoints) {

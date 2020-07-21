@@ -37,7 +37,6 @@ import static ch.fmi.stitching.visiview.UIConstants.LAYOUT_HEIGHT;
 import static ch.fmi.stitching.visiview.UIConstants.LAYOUT_WIDTH;
 import static ch.fmi.stitching.visiview.UIConstants.OUTPUT_FULL;
 import static ch.fmi.stitching.visiview.UIConstants.OUTPUT_MIP;
-import static ch.fmi.stitching.visiview.UIConstants.OUTPUT_TXT;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -196,6 +195,12 @@ public class StitchBrokenDatasetCommand extends DynamicCommand {
 			nFrames = VisiviewUtils.getNFrames(datasetMap);
 			// populate file list
 			stkFileList = VisiviewUtils.getCompanionFiles(ndFile, datasetMap);
+			// get xSize and ySize from first tile
+			if (stkFileList != null) {
+				int[] dims = VisiviewUtils.getTiffDimensions(stkFileList.get(0).get(0));
+				xSize = dims[0];
+				ySize = dims[1];
+			}
 
 			// populate position names
 			positionNames = VisiviewUtils.getPositionNames(datasetMap);
@@ -204,24 +209,23 @@ public class StitchBrokenDatasetCommand extends DynamicCommand {
 			if (!stgRequired) {
 				logService.debug("Position names match Row#_Col# pattern");
 				pixelPositions = VisiviewUtils.positionsFromNames(positionNames, xSize, ySize);
-				StitchingUtils.drawPositions(layout, pixelPositions, xSize, ySize);
 				stgMessage =
 					"<html><font style=\"color:green\">No stage position file required.</font></html>";
 			}
 			ndMessage = "<html>This dataset contains <font style=\"color:green\">" +
 					positionNames.size() + "</font> series.</html>";
+			StitchingUtils.drawPositions(layout, pixelPositions, xSize, ySize);
 			validDatasetInfo = true;
 		}
 		catch (IOException exc) {
-			logService.debug("Error parsing nd file", exc);
-			ndMessage = "Error parsing nd file";
+			logService.debug("Error parsing dataset", exc);
+			ndMessage = "Error parsing dataset";
 		}
 	}
 
 	private void updateStgFileInfo() {
 		try {
 			pixelPositions = VisiviewUtils.positionsFromStgFile(stgFile, xCal, yCal);
-			// TODO get xSize and ySize from first tile?
 			StitchingUtils.drawPositions(layout, pixelPositions, xSize, ySize);
 		}
 		catch (IOException exc) {
