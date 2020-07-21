@@ -1,6 +1,6 @@
 /*-
  * #%L
- * ImageJ plugins for processing VisiView datasets
+ * ImageJ utilities and commands for stitching various datasets
  * %%
  * Copyright (C) 2019 - 2020 Friedrich Miescher Institute for Biomedical
  * 			Research, Basel
