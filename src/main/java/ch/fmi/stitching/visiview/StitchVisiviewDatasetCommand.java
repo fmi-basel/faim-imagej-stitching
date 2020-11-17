@@ -157,7 +157,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 		logService.debug("Now running...");
 
 		// Ensure valid input parameters
-		if (!doOverrideCalibration && !validDatasetInfo) updateNdFileInfo();
+		if (!doOverrideCalibration || !validDatasetInfo) updateNdFileInfo();
 		if (stgRequired && stgFile != null && stgFile.exists()) {
 			updateStgFileInfo();
 		} else if (stgRequired) {
@@ -325,7 +325,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 	private void ndFileChanged() {
 		ndFileChanged = true;
 		updateNdFileInfo();
-		if (!stgFileChanged) autoupdateStgFileParameter();
+		if (stgRequired && !stgFileChanged) autoupdateStgFileParameter();
 	}
 
 	@SuppressWarnings("unused")
@@ -405,7 +405,8 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 
 		xCal = (Double) omeMeta.getPixelsPhysicalSizeX(0).value();
 		yCal = (Double) omeMeta.getPixelsPhysicalSizeY(0).value();
-		if (zSize > 1 && nSeries > 1) zCal = (Double) omeMeta.getPixelsPhysicalSizeZ(0).value();
+		if (zSize > 1 && nSeries > 1 && omeMeta.getPixelsPhysicalSizeZ(0) != null)
+			zCal = (Double) omeMeta.getPixelsPhysicalSizeZ(0).value();
 
 		positionNames = new ArrayList<>();
 		for (int i = 0; i < nSeries; i++) {
