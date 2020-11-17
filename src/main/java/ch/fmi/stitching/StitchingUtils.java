@@ -211,6 +211,8 @@ public class StitchingUtils {
 	 */
 	public static void drawPositions(BufferedImage image, List<float[]> pixelPositions, long xSize, long ySize)
 	{
+		if (image == null) return;
+
 		Float xMin = Float.POSITIVE_INFINITY;
 		Float yMin = Float.POSITIVE_INFINITY;
 		Float xMax = Float.NEGATIVE_INFINITY;
