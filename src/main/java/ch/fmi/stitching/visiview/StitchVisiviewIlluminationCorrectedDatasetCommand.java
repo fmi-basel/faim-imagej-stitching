@@ -69,13 +69,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-
 import static ch.fmi.stitching.visiview.UIConstants.*;
 
 @Plugin(type = Command.class, headless = true,
 	menuPath = "FMI>VisiView Data>Stitch Dataset with DAPI Illumination Correction",
 	initializer = "initializeDialog")
-public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCommand {
+public class StitchVisiviewIlluminationCorrectedDatasetCommand extends
+	DynamicCommand
+{
 
 	@Parameter(label = "Input dataset file (nd)", style = "extensions:nd",
 		callback = "ndFileChanged", persist = false)
@@ -109,7 +110,7 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 	private Boolean doOverrideCalibration = false;
 
 	@Parameter(label = "DAPI channel")
-	private Integer dapi_channel_index = 3;
+	private Integer dapiChannelIndex = 3;
 
 	@Parameter(label = "Pixel spacing (x)", callback = "xSpacingChanged")
 	private Double xCal;
@@ -127,7 +128,7 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 	private ImagePlus fused;
 
 	@Parameter(type = ItemIO.OUTPUT)
-	private ImagePlus estimated_illumination_field;
+	private ImagePlus estimatedIlluminationField;
 
 	@Parameter
 	private SCIFIO scifio;
@@ -146,7 +147,7 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 	private long nTimepoints;
 	private int nSeries;
 
-	private List<float[]> pixelPositions;  // holds the pixel-based positions
+	private List<float[]> pixelPositions; // holds the pixel-based positions
 	private List<String> positionNames;
 	private ArrayList<ImagePlus> images; // ArrayList required by stitching API
 	private IntervalView<FloatType> illumination_img;
@@ -167,7 +168,8 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 		if (!doOverrideCalibration || !validDatasetInfo) updateNdFileInfo();
 		if (stgRequired && stgFile != null && stgFile.exists()) {
 			updateStgFileInfo();
-		} else if (stgRequired) {
+		}
+		else if (stgRequired) {
 			autoupdateStgFileParameter();
 		}
 
@@ -187,7 +189,8 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 
 					images = new ArrayList<>();
 					for (int i = 0; i < imps[0].getNSlices(); i++) {
-						images.add(d.run(imps[0], 1, imps[0].getNChannels(), i+1, i+1, 1, imps[0].getNFrames()));
+						images.add(d.run(imps[0], 1, imps[0].getNChannels(), i + 1, i + 1,
+							1, imps[0].getNFrames()));
 					}
 
 				}
@@ -200,11 +203,12 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 					return;
 				}
 
-				models = StitchingUtils.computeStitching(images, pixelPositions, 2, !stitchingMode.equals(COMPUTE_NONE), saveRAM);
+				models = StitchingUtils.computeStitching(images, pixelPositions, 2,
+					!stitchingMode.equals(COMPUTE_NONE), saveRAM);
 
 				fused = StitchingUtils.fuseTiles(images, models, 2);
 
-				//fused.setTitle(imps[0].getTitle() + "_fused");
+				// fused.setTitle(imps[0].getTitle() + "_fused");
 				fused.setTitle("Fused");
 				Calibration cal = new Calibration();
 				cal.pixelWidth = xCal;
@@ -213,7 +217,10 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 				fused.setCalibration(cal);
 
 				// TODO close all images?
-			} else if (stitchingMode.equals(COMPUTE_VIA_MIP) || outputMode.equals(OUTPUT_MIP)) {
+			}
+			else if (stitchingMode.equals(COMPUTE_VIA_MIP) || outputMode.equals(
+				OUTPUT_MIP))
+			{
 				// create MIPs for all series, stitch online
 				// parameters imp[], positions
 				logService.info("Loading tiles and computing MIPs...");
@@ -229,10 +236,15 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 
 					for (int i = 0; i < nSeries; i++) {
 						ImagePlus img = BF.openImagePlus(options)[0];
-						if (i == 0 ){
-							illumination_img = Views.hyperSlice(ImagePlusAdapter.convertFloat(img), 2, dapi_channel_index);
-						} else {
-							LoopBuilder.setImages(illumination_img, Views.hyperSlice(ImagePlusAdapter.convertFloat(img), 2, dapi_channel_index)).forEachPixel((s, t) -> s.setReal( s.getRealFloat() + t.getRealFloat() ) );
+						if (i == 0) {
+							illumination_img = Views.hyperSlice(ImagePlusAdapter.convertFloat(
+								img), 2, dapiChannelIndex);
+						}
+						else {
+							LoopBuilder.setImages(illumination_img, Views.hyperSlice(
+								ImagePlusAdapter.convertFloat(img), 2, dapiChannelIndex))
+								.forEachPixel((s, t) -> s.setReal(s.getRealFloat() + t
+									.getRealFloat()));
 						}
 						images.add(createMIP(img, ZProjector.MAX_METHOD));
 						options.setSeriesOn(i, false);
@@ -248,33 +260,40 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 					return;
 				}
 
-				try{
+				try {
 					final float n_tiles = (float) images.size();
-					LoopBuilder.setImages(illumination_img).forEachPixel(s -> s.setReal(s.getRealFloat() / n_tiles));
-					final Img<FloatType> fitted_illumination_field = getIlluminationField(illumination_img, dapi_channel_index);
-					estimated_illumination_field = ImageJFunctions.wrap(fitted_illumination_field, "Estimated Illumination Field");
-
+					LoopBuilder.setImages(illumination_img).forEachPixel(s -> s.setReal(s
+						.getRealFloat() / n_tiles));
+					final Img<FloatType> fitted_illumination_field = getIlluminationField(
+						illumination_img, dapiChannelIndex);
+					estimatedIlluminationField = ImageJFunctions.wrap(
+						fitted_illumination_field, "Estimated Illumination Field");
 
 					logService.info("Correcting illumination...");
 					final FloatType min = new FloatType();
 					final FloatType max = new FloatType();
 					ComputeMinMax.computeMinMax(fitted_illumination_field, min, max);
 					for (ImagePlus mip : images) {
-						IntervalView<RealType> dapi = (IntervalView<RealType>) Views.hyperSlice((ImgPlus<?>)ImagePlusAdapter.wrapImgPlus(mip), 2, dapi_channel_index);
+						IntervalView<RealType> dapi = (IntervalView<RealType>) Views
+							.hyperSlice((ImgPlus<?>) ImagePlusAdapter.wrapImgPlus(mip), 2,
+								dapiChannelIndex);
 						LoopBuilder.setImages(dapi, fitted_illumination_field).forEachPixel(
-								(dapi_pixel, illumination_field_pixel) -> {
-									dapi_pixel.setReal(dapi_pixel.getRealFloat() / illumination_field_pixel.getRealFloat() * max.getRealDouble());
-								}
-						);
+							(dapi_pixel, illumination_field_pixel) -> {
+								dapi_pixel.setReal(dapi_pixel.getRealFloat() /
+									illumination_field_pixel.getRealFloat() * max
+										.getRealDouble());
+							});
 
 					}
-				} catch (Exception exc) {
+				}
+				catch (Exception exc) {
 					logService.error("Could not fit Gaussian.", exc);
 					return;
 				}
 
 				logService.info("Stitching MIPs...");
-				models = StitchingUtils.computeStitching(images, pixelPositions, 2, stitchingMode.equals(COMPUTE_NONE) ? false : true, saveRAM);
+				models = StitchingUtils.computeStitching(images, pixelPositions, 2,
+					stitchingMode.equals(COMPUTE_NONE) ? false : true, saveRAM);
 
 				// case: via MIP: go on with full dataset
 				// load all full series into imps[]
@@ -284,8 +303,10 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 
 				// TODO set title and calibration
 
-			} else { // stitch with TileConfiguration.txt file
-				//String tileConfigPath = writeTileConfiguration(ndFile, pixelPositions, is2D);
+			}
+			else { // stitch with TileConfiguration.txt file
+				// String tileConfigPath = writeTileConfiguration(ndFile,
+				// pixelPositions, is2D);
 
 				// stitchClassical(tileConfigPath);
 				try {
@@ -298,19 +319,24 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 					images = new ArrayList<>();
 					images.addAll(Arrays.asList(imps));
 					// computeStitching
-					models = StitchingUtils.computeStitching(images, pixelPositions, is2D ? 2 : 3, stitchingMode.equals(COMPUTE_NONE) ? false : true, saveRAM);
+					models = StitchingUtils.computeStitching(images, pixelPositions, is2D
+						? 2 : 3, stitchingMode.equals(COMPUTE_NONE) ? false : true,
+						saveRAM);
 					// fuseTiles
 					fused = StitchingUtils.fuseTiles(images, models, is2D ? 2 : 3);
-				} catch (FormatException exc) {
+				}
+				catch (FormatException exc) {
 					logService.error("Error performing a file format operation", exc);
 					return;
-				} catch (IOException exc) {
+				}
+				catch (IOException exc) {
 					logService.error("Error reading file", exc);
 					return;
 				}
 			}
 			// TODO consolidate StitchingUtils calls to here (using is2D)
-		} else {
+		}
+		else {
 			logService.error("Initial tile positions cannot be determined.");
 			// TODO offer possibility of stitching unknown positions ?
 			return;
@@ -324,7 +350,7 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 		// 2.b) MIP ? => create MIPs, the 2D stitching (imp[])
 
 		// 1) - write TileConfiguration to disk, start Grid/Collection Stitching
-		//    - read imp[] array, start stitching via API (when 2d multipos, or MIP)
+		// - read imp[] array, start stitching via API (when 2d multipos, or MIP)
 		// 2) - do stitching
 
 		// if (nSeries == 1 && zSize == nPositions) => 2D stitching
@@ -347,43 +373,51 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 	}
 
 	@Nullable
-	private Img<FloatType> getIlluminationField(final IntervalView<FloatType> tile_mips, final int dapi_channel_index) {
+	private Img<FloatType> getIlluminationField(
+		final IntervalView<FloatType> tile_mips, final int dapi_channel_index)
+	{
 
-		final ImagePlus mip_stack = ImageJFunctions.wrap(Views.moveAxis(Views.addDimension(tile_mips, 0, 0), 3, 2), "tile_mip_stack");
+		final ImagePlus mip_stack = ImageJFunctions.wrap(Views.moveAxis(Views
+			.addDimension(tile_mips, 0, 0), 3, 2), "tile_mip_stack");
 
-		final ImagePlus illumination_field = createMIP(mip_stack, ZProjector.MAX_METHOD);
+		final ImagePlus illumination_field = createMIP(mip_stack,
+			ZProjector.MAX_METHOD);
 
-		final Localizable center_point = new Point(new long[]{illumination_field.getProcessor().getWidth() / 2,
-				illumination_field.getProcessor().getHeight() / 2});
-
+		final Localizable center_point = new Point(new long[] { illumination_field
+			.getProcessor().getWidth() / 2, illumination_field.getProcessor()
+				.getHeight() / 2 });
 
 		logService.info("Fitting Gaussian to estimate illumination field...");
 		final Gaussian gaussian = new Gaussian();
-		final PeakFitter fitter = new PeakFitter(ImagePlusAdapter.wrap(illumination_field), Arrays.asList(center_point),
-				new LevenbergMarquardtSolver(), gaussian, new MLGaussianEstimator(illumination_field.getProcessor().getWidth()/3.0, 2));
+		final PeakFitter fitter = new PeakFitter(ImagePlusAdapter.wrap(
+			illumination_field), Arrays.asList(center_point),
+			new LevenbergMarquardtSolver(), gaussian, new MLGaussianEstimator(
+				illumination_field.getProcessor().getWidth() / 3.0, 2));
 
 		fitter.checkInput();
 		fitter.process();
 
 		double[] gaussian_params = (double[]) fitter.getResult().get(center_point);
 		logService.info("Fitted Gaussian parameters:");
-		logService.info(" - X position: " +  String.format("%.2f", gaussian_params[0]));
-		logService.info(" - Y position: " + String.format("%.2f", gaussian_params[1]));
-		logService.info(" - Amplitude : " + String.format("%.2f", gaussian_params[2]));
-		logService.info(" - Sigma     : " + String.format("%.2f", 1. / Math.sqrt(2. * gaussian_params[3])));
+		logService.info(" - X position: " + String.format("%.2f",
+			gaussian_params[0]));
+		logService.info(" - Y position: " + String.format("%.2f",
+			gaussian_params[1]));
+		logService.info(" - Amplitude : " + String.format("%.2f",
+			gaussian_params[2]));
+		logService.info(" - Sigma     : " + String.format("%.2f", 1. / Math.sqrt(
+			2. * gaussian_params[3])));
 
-
-		final Img<FloatType> fitted_illumination_field = ImagePlusAdapter.convertFloat(illumination_field.duplicate());
+		final Img<FloatType> fitted_illumination_field = ImagePlusAdapter
+			.convertFloat(illumination_field.duplicate());
 		final double[] pos = new double[2];
-		LoopBuilder.setImages(Intervals.positions(fitted_illumination_field), fitted_illumination_field).forEachPixel(
-				(position, pixel) -> {
-					position.localize(pos);
-					pixel.setReal(gaussian.val(pos, gaussian_params));
-				}
-		);
+		LoopBuilder.setImages(Intervals.positions(fitted_illumination_field),
+			fitted_illumination_field).forEachPixel((position, pixel) -> {
+				position.localize(pos);
+				pixel.setReal(gaussian.val(pos, gaussian_params));
+			});
 		return fitted_illumination_field;
 	}
-
 
 	private ImagePlus createMIP(final ImagePlus imp, final int method) {
 		ZProjector zp = new ZProjector(imp);
@@ -427,7 +461,8 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 
 	private void autoupdateStgFileParameter() {
 		if (ndFile == null || !ndFile.exists()) {
-			ndMessage = "<html><p style=\"color:red\">Not a valid nd file.</p></html>";
+			ndMessage =
+				"<html><p style=\"color:red\">Not a valid nd file.</p></html>";
 			return;
 		}
 		stgFile = VisiviewUtils.getMatchingStgForNd(ndFile);
@@ -443,12 +478,14 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 
 	private void autoupdateNdFileParameter() {
 		if (stgFile == null || !stgFile.exists()) {
-			stgMessage = "<html><p style=\"color:red\">Not a valid stg file.</p></html>";
+			stgMessage =
+				"<html><p style=\"color:red\">Not a valid stg file.</p></html>";
 			return;
 		}
 		ndFile = VisiviewUtils.getMatchingNdForStg(stgFile);
 		if (ndFile == null) {
-			ndMessage = "<html><p style=\"color:red\">No matching nd file found.</p></html>";
+			ndMessage =
+				"<html><p style=\"color:red\">No matching nd file found.</p></html>";
 			return;
 		}
 		ndMessage =
@@ -460,7 +497,8 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 		if (ndFile == null) return;
 		validDatasetInfo = false;
 		ndMessage = "parsing nd file..."; // TODO update dialog on separate thread?
-		// TODO use scifio.initialize() and scifio.translate() with OMEMetadata here to get series names
+		// TODO use scifio.initialize() and scifio.translate() with OMEMetadata here
+		// to get series names
 
 		IMetadata omeMeta = MetadataTools.createOMEXMLMetadata();
 		try (ImageReader reader = new ImageReader()) {
@@ -498,7 +536,8 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 
 		if (!stgRequired) {
 			logService.debug("Position names match Row#_Col# pattern");
-			pixelPositions = VisiviewUtils.positionsFromNames(positionNames, xSize, ySize);
+			pixelPositions = VisiviewUtils.positionsFromNames(positionNames, xSize,
+				ySize);
 
 			StitchingUtils.drawPositions(layout, pixelPositions, xSize, ySize);
 			stgMessage =
@@ -506,19 +545,19 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 		}
 
 		ndMessage = "<html>This dataset contains <font style=\"color:green\">" +
-				nSeries + "</font> series.</html>";
+			nSeries + "</font> series.</html>";
 		validDatasetInfo = true;
-		
+
 		/* SCIFIO version 2
 		try {
 			Metadata metadata = scifio.initializer().parseMetadata(ndFile.getAbsolutePath());
 			OMEMetadata omeMeta = new OMEMetadata(getContext());
 			scifio.translator().translate(metadata, omeMeta, true);
-
+		
 			OMEXMLMetadata omeRoot = omeMeta.getRoot();
-
+		
 			nSeries = omeRoot.getImageCount();
-
+		
 			// get size and calibration from *first* series only
 			xSize = omeRoot.getPixelsSizeX(0).getValue();
 			ySize = omeRoot.getPixelsSizeY(0).getValue();
@@ -528,22 +567,22 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 			xCal = (Double) omeRoot.getPixelsPhysicalSizeX(0).value();
 			yCal = (Double) omeRoot.getPixelsPhysicalSizeY(0).value();
 			zCal = (Double) omeRoot.getPixelsPhysicalSizeZ(0).value();
-
+		
 			//omeRoot.getImageName(0); // FIX ME get series names, populate gridPositions if applicable
 			logService.error(omeMeta.get(0).getName());
 			logService.error(metadata.get(0).getName());
-
+		
 			positionNames = new ArrayList<>();
 			for (int i = 0; i< nSeries; i++) {
 				positionNames.add(omeRoot.getImageName(i));
 				logService.error("Position " + i + ": " + omeRoot.getImageName(i));
 			}
-
+		
 			gridPositions = new ArrayList<>();
 			if (positionNames.get(0).startsWith("Row")) {
 				logService.error("starts with 'Row'");
 			}
-
+		
 			ndMessage = "<html>This dataset contains <font style=\"color:green\">" +
 					nSeries + "</font> series.</html>";
 				validDatasetInfo = true;
@@ -564,17 +603,17 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 			Metadata metadata = format.createParser().parse(ndFile);
 			nSeries = metadata.getImageCount();
 			ImageMetadata imageMetadata = metadata.get(0);
-
+		
 			xSize = imageMetadata.getAxisLength(Axes.X);
 			ySize = imageMetadata.getAxisLength(Axes.Y);
 			zSize = imageMetadata.getAxisLength(Axes.Z);
 			nChannels = imageMetadata.getAxisLength(Axes.CHANNEL);
 			nTimepoints = imageMetadata.getAxisLength(Axes.TIME);
-
+		
 			xCal = imageMetadata.getAxis(Axes.X).averageScale(0, 1);
 			yCal = imageMetadata.getAxis(Axes.Y).averageScale(0, 1);
 			zCal = imageMetadata.getAxis(Axes.Z).averageScale(0, 1);
-
+		
 			// List<CalibratedAxis> axes = imageMetadata.getAxes();
 			ndMessage = "<html>This dataset contains <font style=\"color:green\">" +
 				nSeries + "</font> series.</html>";
@@ -602,18 +641,17 @@ public class StitchVisiviewIlluminationCorrectedDatasetCommand extends DynamicCo
 		}
 	}
 
-	private String writeTileConfiguration(File file,
-		ArrayList<float[]> positions, boolean is2d)
+	private String writeTileConfiguration(File file, ArrayList<float[]> positions,
+		boolean is2d)
 	{
 		// TODO write TileConfiguration.txt file (using Stitching API?)
-		File tileConfigFile = new File(file.getParentFile(), file.getName() + "_TileConfiguration.txt");
+		File tileConfigFile = new File(file.getParentFile(), file.getName() +
+			"_TileConfiguration.txt");
 		ArrayList<String> lines = new ArrayList<>();
 
 		// Header
 
-
 		// Positions
-
 
 		try {
 			Files.write(tileConfigFile.toPath(), lines, Charset.forName("UTF-8"));
