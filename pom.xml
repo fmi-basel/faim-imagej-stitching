@@ -70,8 +70,8 @@
 		<url>https://github.com/fmi-basel/faim-imagej-stitching/issues</url>
 	</issueManagement>
 	<ciManagement>
-		<system>Travis CI</system>
-		<url>https://travis-ci.com/fmi-basel/faim-imagej-stitching</url>
+		<system>GitHub Actions</system>
+		<url>https://github.com/fmi-basel/faim-imagej-stitching/actions</url>
 	</ciManagement>
 
 	<properties>
