@@ -1,2 +1,2 @@
-[![](https://travis-ci.com/fmi-basel/faim-imagej-stitching.svg?branch=master)](https://travis-ci.com/fmi-basel/faim-imagej-stitching)
+[![](https://github.com/fmi-basel/faim-imagej-stitching/actions/workflows/build-main.yml/badge.svg)](https://github.com/fmi-basel/faim-imagej-stitching/actions/workflows/build-main.yml)
 
