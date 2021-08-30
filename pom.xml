@@ -82,7 +82,7 @@
 		<license.excludes>**/resources/scripts/**</license.excludes>
 
 		<!-- NB: Deploy releases to the SciJava Maven repository. -->
-		<releaseProfiles>deploy-to-scijava</releaseProfiles>
+		<releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
 
 		<scifio.version>0.37.3</scifio.version>
 	</properties>
