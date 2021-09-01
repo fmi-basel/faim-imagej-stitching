@@ -23,8 +23,8 @@
 	</organization>
 	<licenses>
 		<license>
-			<name>BSD 2-Clause License</name>
-			<url>https://opensource.org/licenses/BSD-2-Clause</url>
+			<name>GNU General Public License v2+</name>
+			<url>http://www.gnu.org/licenses/gpl-2.0.txt</url>
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
@@ -76,14 +76,13 @@
 
 	<properties>
 		<package-name>ch.fmi</package-name>
-		<license.licenseName>bsd_2</license.licenseName>
+		<license.licenseName>gpl_v2</license.licenseName>
 		<license.copyrightOwners>Friedrich Miescher Institute for Biomedical
 			Research, Basel</license.copyrightOwners>
 		<license.excludes>**/resources/scripts/**</license.excludes>
 
 		<!-- NB: Deploy releases to the SciJava Maven repository. -->
 		<releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
-
 		<scifio.version>0.37.3</scifio.version>
 	</properties>
 
@@ -139,6 +138,11 @@
 			<groupId>net.imagej</groupId>
 			<artifactId>imagej-legacy</artifactId>
 			<scope>runtime</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>net.imglib2</groupId>
+			<artifactId>imglib2-algorithm-gpl</artifactId>
 		</dependency>
 
 		<!-- for running the main method -->
