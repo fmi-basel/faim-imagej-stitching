@@ -1,5 +1,6 @@
 #@ File[] (style = "extensions:nd") inputFiles
 #@ File (style = "directory") outputFolder
+#@ String (choices = {"Full volume output", "Maximum projection only"}, label = "Output mode") outputMode
 #@ String (choices = {"tif", "ics/ids", "ims"}, style = "radioButtonVertical") outputFormat
 #@ Double xCal
 #@ Double yCal
@@ -16,7 +17,21 @@ import ij.IJ
 
 inputMap = [:]
 inputMap["stitchingMode"] = UIConstants.COMPUTE_NONE
-inputMap["outputMode"] = UIConstants.OUTPUT_FULL
+
+// inputMap["outputMode"] = UIConstants.OUTPUT_FULL
+switch (outputMode) {
+	case UIConstants.OUTPUT_MIP:
+		inputMap["outputMode"] = UIConstants.OUTPUT_MIP
+		break
+	case UIConstants.OUTPUT_FULL:
+		inputMap["outputMode"] = UIConstants.OUTPUT_FULL
+		break
+	default:
+		logService.warn("Output mode '" + outputMode + "' doesn't correspond to a valid choice.")
+		inputMap["outputMode"] = UIConstants.OUTPUT_FULL
+		break	
+}
+
 inputMap["doOverrideCalibration"] = true
 inputMap["xCal"] = xCal
 inputMap["yCal"] = yCal
