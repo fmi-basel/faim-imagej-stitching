@@ -23,6 +23,7 @@
 package ch.fmi.stitching.visiview;
 
 import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvException;
 
 import java.io.File;
 import java.io.FileReader;
@@ -193,6 +194,11 @@ public class VisiviewUtils {
 		}
 		//return Files.lines(ndFile.toPath()).map(line -> parseNdLine(line)).filter(
 		//	Objects::nonNull).collect(Collectors.toMap(arr -> arr[0], arr -> arr[1]));
+		catch (CsvException exc) {
+			// TODO Fix error reporting
+			exc.printStackTrace();
+			return null;
+		}
 	}
 
 	public static List<float[]> positionsFromStgFile(File stgFile, double xCal,
