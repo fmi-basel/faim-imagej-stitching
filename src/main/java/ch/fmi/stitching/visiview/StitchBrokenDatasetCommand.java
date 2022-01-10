@@ -2,7 +2,7 @@
  * #%L
  * ImageJ utilities and commands for stitching various datasets
  * %%
- * Copyright (C) 2019 - 2021 Friedrich Miescher Institute for Biomedical
+ * Copyright (C) 2019 - 2022 Friedrich Miescher Institute for Biomedical
  * 			Research, Basel
  * %%
  * This program is free software: you can redistribute it and/or modify
