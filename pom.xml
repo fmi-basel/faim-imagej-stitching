@@ -5,13 +5,13 @@
 	<parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
-		<version>31.1.0</version>
+		<version>34.1.0</version>
 		<relativePath />
 	</parent>
 
 	<groupId>ch.fmi</groupId>
 	<artifactId>faim-imagej-stitching</artifactId>
-	<version>0.1.4-SNAPSHOT</version>
+	<version>0.2.0-SNAPSHOT</version>
 
 	<name>Stitching Utilities</name>
 	<description>ImageJ utilities and commands for stitching various datasets</description>
