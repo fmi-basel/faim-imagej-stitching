@@ -53,10 +53,18 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import ch.fmi.stitching.StitchingUtils;
+import ij.IJ;
 import ij.ImagePlus;
+import ij.ImageStack;
 import ij.measure.Calibration;
+import ij.plugin.ChannelSplitter;
 import ij.plugin.Duplicator;
+import ij.plugin.ImageCalculator;
+import ij.plugin.RGBStackMerge;
 import ij.plugin.ZProjector;
+import ij.process.ImageConverter;
+import ij.process.ImageProcessor;
+import ij.process.ImageStatistics;
 import loci.formats.FormatException;
 import loci.formats.ImageReader;
 import loci.formats.MetadataTools;
@@ -69,6 +77,11 @@ import mpicbg.models.InvertibleBoundable;
 	menuPath = "FMI>VisiView Data>Stitch Dataset (default)",
 	initializer = "initializeDialog")
 public class StitchVisiviewDatasetCommand extends DynamicCommand {
+
+	public enum IlluminationCorrectionMethod {
+		NONE,
+		FROM_FILE,
+	}
 
 	@Parameter(label = "Input dataset file (nd)", style = "extensions:nd",
 		callback = "ndFileChanged", persist = false)
@@ -100,6 +113,12 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 	@Parameter(label = "Override calibration metadata with provided values",
 		required = false)
 	private Boolean doOverrideCalibration = false;
+
+	@Parameter(label = "Illumination field correction")
+	private IlluminationCorrectionMethod illuminationCorrection;
+
+	@Parameter(label = "Illumination field reference", style = "extensions:tif/tiff", required = false)
+	private File illuminationReference;
 
 	@Parameter(label = "Pixel spacing (x)", callback = "xSpacingChanged")
 	private Double xCal;
@@ -138,6 +157,8 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 	private ArrayList<ImagePlus> images; // ArrayList required by stitching API
 	private ArrayList<InvertibleBoundable> models;
 
+	private ImagePlus normalizedReferenceImage;
+
 	private boolean stgRequired;
 
 	private boolean ndFileChanged = false;
@@ -155,6 +176,11 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 			updateStgFileInfo();
 		} else if (stgRequired) {
 			autoupdateStgFileParameter();
+		}
+
+		// Prepare illumination correction if applicable
+		if (illuminationCorrection == IlluminationCorrectionMethod.FROM_FILE) {
+			normalizedReferenceImage = loadReferenceImage(illuminationReference);
 		}
 
 		// Start stitching process
@@ -175,6 +201,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 					for (int i = 0; i < imps[0].getNSlices(); i++) {
 						images.add(d.run(imps[0], 1, imps[0].getNChannels(), i+1, i+1, 1, imps[0].getNFrames()));
 					}
+					images = applyIlluminationCorrection(images, normalizedReferenceImage);
 
 				}
 				catch (FormatException exc) {
@@ -227,6 +254,8 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 					return;
 				}
 
+				images = applyIlluminationCorrection(images, normalizedReferenceImage);
+
 				models = StitchingUtils.computeStitching(images, pixelPositions, 2, stitchingMode.equals(COMPUTE_NONE) ? false : true, saveRAM);
 
 				// case: via MIP: go on with full dataset
@@ -250,6 +279,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 
 					images = new ArrayList<>();
 					images.addAll(Arrays.asList(imps));
+					images = applyIlluminationCorrection(images, normalizedReferenceImage);
 					// computeStitching
 					models = StitchingUtils.computeStitching(images, pixelPositions, is2D ? 2 : 3, stitchingMode.equals(COMPUTE_NONE) ? false : true, saveRAM);
 					// fuseTiles
@@ -297,6 +327,34 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 		 * - Fuse MIP/full dataset
 		 */
 
+	}
+
+	private ArrayList<ImagePlus> applyIlluminationCorrection(ArrayList<ImagePlus> imps,
+			ImagePlus reference) {
+		if (reference == null) return imps;
+		for (ImagePlus imp : imps) {
+			new ImageConverter(imp).convertToGray32();
+			ImagePlus[] channels = ChannelSplitter.split(imp);
+			for (ImagePlus ch : channels) {
+				ImageCalculator.run(ch, reference, "Divide stack"); 
+			}
+			imp = RGBStackMerge.mergeChannels(channels, false);
+		}
+		return imps;
+	}
+
+	private ImagePlus loadReferenceImage(File referenceFile) {
+		if (referenceFile == null) return null;
+		ImagePlus imp = IJ.openImage(referenceFile.getAbsolutePath());
+		// TODO ensure 32-bit and normalize to [0;1]
+		new ImageConverter(imp).convertToGray32();
+		ImageStack stack = imp.getStack();
+		for (int i=1; i<=imp.getStackSize(); i++) {
+			ImageProcessor ip = stack.getProcessor(i);
+			ImageStatistics stats = ip.getStats();
+			ip.multiply(1.0/stats.max);
+		}
+		return imp;
 	}
 
 	private ImagePlus createMIP(ImagePlus imp) {
