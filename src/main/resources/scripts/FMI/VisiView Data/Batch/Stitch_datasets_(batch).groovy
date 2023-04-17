@@ -2,6 +2,7 @@
 #@ File (style = "directory") outputFolder
 #@ String (choices = {"Full volume output", "Maximum projection only"}, label = "Output mode") outputMode
 #@ String (choices = {"tif", "ics/ids", "ims"}, style = "radioButtonVertical") outputFormat
+#@ File (style="extensions:tif/tiff", required=false) illumination_reference
 #@ Double xCal
 #@ Double yCal
 #@ Double zCal
@@ -12,6 +13,7 @@
 #@ LogService logService
 
 import ch.fmi.stitching.visiview.StitchVisiviewDatasetCommand
+import ch.fmi.stitching.visiview.StitchVisiviewDatasetCommand.IlluminationCorrectionMethod
 import ch.fmi.stitching.visiview.UIConstants
 import ij.IJ
 
@@ -39,6 +41,11 @@ inputMap["zCal"] = zCal
 inputMap["scifio"] = scifio
 inputMap["formatService"] = formatService
 inputMap["logService"] = logService
+
+if (illumination_reference != null && illumination_reference.exists()) {
+	inputMap["illuminationCorrection"] = IlluminationCorrectionMethod.FROM_FILE
+	inputMap["illuminationReference"] = illumination_reference
+}
 
 for (ndFile in inputFiles) {
 	inputMap["ndFile"] = ndFile

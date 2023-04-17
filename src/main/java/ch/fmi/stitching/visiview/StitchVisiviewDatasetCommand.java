@@ -332,11 +332,15 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 	private ArrayList<ImagePlus> applyIlluminationCorrection(ArrayList<ImagePlus> imps,
 			ImagePlus reference) {
 		if (reference == null) return imps;
+		if (reference.getNChannels() > 1 && reference.getNChannels() != imps.get(0).getNChannels()) {
+			throw new IllegalArgumentException("The number of channels of the reference must be equal to the number of channels in the tiles, or 1.");
+		}
+		ImagePlus[] refChannels = ChannelSplitter.split(reference);
 		for (ImagePlus imp : imps) {
 			new ImageConverter(imp).convertToGray32();
 			ImagePlus[] channels = ChannelSplitter.split(imp);
-			for (ImagePlus ch : channels) {
-				ImageCalculator.run(ch, reference, "Divide stack"); 
+			for (int i=0; i<channels.length; i++) {
+				ImageCalculator.run(channels[i], refChannels[refChannels.length > 1 ? i : 0], "Divide stack"); 
 			}
 			imp = RGBStackMerge.mergeChannels(channels, false);
 		}
