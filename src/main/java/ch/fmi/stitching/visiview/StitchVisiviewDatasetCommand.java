@@ -43,6 +43,8 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
@@ -120,6 +122,9 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 	@Parameter(label = "Illumination field reference", style = "extensions:tif/tiff", required = false)
 	private File illuminationReference;
 
+	@Parameter(label = "Illumination offset", required = false)
+	private String illuminationOffset;
+
 	@Parameter(label = "Pixel spacing (x)", callback = "xSpacingChanged")
 	private Double xCal;
 
@@ -158,6 +163,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 	private ArrayList<InvertibleBoundable> models;
 
 	private ImagePlus normalizedReferenceImage;
+	private int[] offsets;
 
 	private boolean stgRequired;
 
@@ -181,6 +187,10 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 		// Prepare illumination correction if applicable
 		if (illuminationCorrection == IlluminationCorrectionMethod.FROM_FILE) {
 			normalizedReferenceImage = loadReferenceImage(illuminationReference);
+			offsets = parseOffsets(illuminationOffset, normalizedReferenceImage.getNChannels());
+			if (offsets.length != normalizedReferenceImage.getNChannels()) {
+				throw new IllegalArgumentException("Number of provided offsets doesn't correspond to number of channels in the reference.");
+			}
 		}
 
 		// Start stitching process
@@ -201,7 +211,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 					for (int i = 0; i < imps[0].getNSlices(); i++) {
 						images.add(d.run(imps[0], 1, imps[0].getNChannels(), i+1, i+1, 1, imps[0].getNFrames()));
 					}
-					images = applyIlluminationCorrection(images, normalizedReferenceImage);
+					images = applyIlluminationCorrection(images, normalizedReferenceImage, offsets);
 
 				}
 				catch (FormatException exc) {
@@ -254,7 +264,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 					return;
 				}
 
-				images = applyIlluminationCorrection(images, normalizedReferenceImage);
+				images = applyIlluminationCorrection(images, normalizedReferenceImage, offsets);
 
 				models = StitchingUtils.computeStitching(images, pixelPositions, 2, stitchingMode.equals(COMPUTE_NONE) ? false : true, saveRAM);
 
@@ -279,7 +289,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 
 					images = new ArrayList<>();
 					images.addAll(Arrays.asList(imps));
-					images = applyIlluminationCorrection(images, normalizedReferenceImage);
+					images = applyIlluminationCorrection(images, normalizedReferenceImage, offsets);
 					// computeStitching
 					models = StitchingUtils.computeStitching(images, pixelPositions, is2D ? 2 : 3, stitchingMode.equals(COMPUTE_NONE) ? false : true, saveRAM);
 					// fuseTiles
@@ -329,8 +339,16 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 
 	}
 
+	private int[] parseOffsets(String offsetString, int nChannels) {
+		int[] o = Stream.of(offsetString.split(",")).mapToInt(Integer::parseInt).toArray();
+		if (o.length == 1) {
+			return IntStream.generate(() -> {return (int) o[0];}).limit(nChannels).toArray();
+		}
+		return o;
+	}
+
 	private ArrayList<ImagePlus> applyIlluminationCorrection(ArrayList<ImagePlus> imps,
-			ImagePlus reference) {
+			ImagePlus reference, int[] offset) {
 		if (reference == null) return imps;
 		if (reference.getNChannels() > 1 && reference.getNChannels() != imps.get(0).getNChannels()) {
 			throw new IllegalArgumentException("The number of channels of the reference must be equal to the number of channels in the tiles, or 1.");
@@ -340,6 +358,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 			new ImageConverter(imp).convertToGray32();
 			ImagePlus[] channels = ChannelSplitter.split(imp);
 			for (int i=0; i<channels.length; i++) {
+				IJ.run(channels[i], "Subtract...", "value=" + offset[offset.length > 1 ? i : 0] + " stack");
 				ImageCalculator.run(channels[i], refChannels[refChannels.length > 1 ? i : 0], "Divide stack"); 
 			}
 			imp = RGBStackMerge.mergeChannels(channels, false);
