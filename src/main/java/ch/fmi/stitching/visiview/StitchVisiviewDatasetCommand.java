@@ -120,6 +120,9 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 	@Parameter(label = "Illumination field reference", style = "extensions:tif/tiff", required = false)
 	private File illuminationReference;
 
+	@Parameter(label = "Dark field reference", style = "extensions:tif/tiff", required = false)
+	private File darkReference;
+
 	@Parameter(label = "Pixel spacing (x)", callback = "xSpacingChanged")
 	private Double xCal;
 
@@ -158,6 +161,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 	private ArrayList<InvertibleBoundable> models;
 
 	private ImagePlus normalizedReferenceImage;
+	private ImagePlus darkImage;
 
 	private boolean stgRequired;
 
@@ -181,6 +185,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 		// Prepare illumination correction if applicable
 		if (illuminationCorrection == IlluminationCorrectionMethod.FROM_FILE) {
 			normalizedReferenceImage = loadReferenceImage(illuminationReference);
+			darkImage = loadDarkImage(darkReference);
 		}
 
 		// Start stitching process
@@ -201,7 +206,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 					for (int i = 0; i < imps[0].getNSlices(); i++) {
 						images.add(d.run(imps[0], 1, imps[0].getNChannels(), i+1, i+1, 1, imps[0].getNFrames()));
 					}
-					images = applyIlluminationCorrection(images, normalizedReferenceImage);
+					images = applyIlluminationCorrection(images, normalizedReferenceImage, darkImage);
 
 				}
 				catch (FormatException exc) {
@@ -254,7 +259,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 					return;
 				}
 
-				images = applyIlluminationCorrection(images, normalizedReferenceImage);
+				images = applyIlluminationCorrection(images, normalizedReferenceImage, darkImage);
 
 				models = StitchingUtils.computeStitching(images, pixelPositions, 2, stitchingMode.equals(COMPUTE_NONE) ? false : true, saveRAM);
 
@@ -279,7 +284,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 
 					images = new ArrayList<>();
 					images.addAll(Arrays.asList(imps));
-					images = applyIlluminationCorrection(images, normalizedReferenceImage);
+					images = applyIlluminationCorrection(images, normalizedReferenceImage, darkImage);
 					// computeStitching
 					models = StitchingUtils.computeStitching(images, pixelPositions, is2D ? 2 : 3, stitchingMode.equals(COMPUTE_NONE) ? false : true, saveRAM);
 					// fuseTiles
@@ -330,16 +335,26 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 	}
 
 	private ArrayList<ImagePlus> applyIlluminationCorrection(ArrayList<ImagePlus> imps,
-			ImagePlus reference) {
+			ImagePlus reference, ImagePlus darkFieldReference) {
 		if (reference == null) return imps;
 		if (reference.getNChannels() > 1 && reference.getNChannels() != imps.get(0).getNChannels()) {
 			throw new IllegalArgumentException("The number of channels of the reference must be equal to the number of channels in the tiles, or 1.");
 		}
+		if (darkFieldReference != null && darkFieldReference.getNChannels() > 1 && darkFieldReference.getNChannels() != imps.get(0).getNChannels()) {
+			throw new IllegalArgumentException("The number of channels of the dark field reference must be equal to the number of channels in the tiles, or 1.");
+		}
 		ImagePlus[] refChannels = ChannelSplitter.split(reference);
+		ImagePlus[] darkChannels = null;
+		if (darkFieldReference != null) {
+			darkChannels = ChannelSplitter.split(darkFieldReference);
+		}
 		for (ImagePlus imp : imps) {
 			new ImageConverter(imp).convertToGray32();
 			ImagePlus[] channels = ChannelSplitter.split(imp);
 			for (int i=0; i<channels.length; i++) {
+				if (darkFieldReference != null) {
+					ImageCalculator.run(channels[i], darkChannels[darkChannels.length > 1 ? i : 0], "Subtract stack");
+				}
 				ImageCalculator.run(channels[i], refChannels[refChannels.length > 1 ? i : 0], "Divide stack"); 
 			}
 			imp = RGBStackMerge.mergeChannels(channels, false);
@@ -350,7 +365,7 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 	private ImagePlus loadReferenceImage(File referenceFile) {
 		if (referenceFile == null) return null;
 		ImagePlus imp = IJ.openImage(referenceFile.getAbsolutePath());
-		// TODO ensure 32-bit and normalize to [0;1]
+		// ensure 32-bit and normalize to [0;1]
 		new ImageConverter(imp).convertToGray32();
 		ImageStack stack = imp.getStack();
 		for (int i=1; i<=imp.getStackSize(); i++) {
@@ -358,6 +373,14 @@ public class StitchVisiviewDatasetCommand extends DynamicCommand {
 			ImageStatistics stats = ip.getStats();
 			ip.multiply(1.0/stats.max);
 		}
+		return imp;
+	}
+
+	private ImagePlus loadDarkImage(File referenceFile) {
+		if (referenceFile == null) return null;
+		ImagePlus imp = IJ.openImage(referenceFile.getAbsolutePath());
+		// ensure 32-bit
+		new ImageConverter(imp).convertToGray32();
 		return imp;
 	}
 
